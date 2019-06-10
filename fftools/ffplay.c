@@ -44,6 +44,7 @@
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
 #include "libavutil/opt.h"
+#include "libavutil/circular_buffer.h"
 #include "libavcodec/avfft.h"
 #include "libswresample/swresample.h"
 
@@ -59,7 +60,14 @@
 #include "cmdutils.h"
 
 #include <assert.h>
-
+#include "libavutil/ffback.h"
+#include "libavutil/thread.h" 
+unsigned char *buf;
+static cbuf_handle_t cbuf; 
+static pthread_t thread;
+static pthread_mutex_t m;
+static int b_start = 0;
+char bufW[10];
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
@@ -1723,6 +1731,22 @@ display:
                    sqsize,
                    is->video_st ? is->viddec.avctx->pts_correction_num_faulty_dts : 0,
                    is->video_st ? is->viddec.avctx->pts_correction_num_faulty_pts : 0);
+    if ( !b_start ){
+	    pthread_mutex_init(&m,NULL);
+	    buf = malloc(64 * sizeof(unsigned char));
+   	    cbuf = circular_buf_init(buf,64); 
+      	    pthread_create(&thread,NULL,send_back,(void *)cbuf); 
+            b_start = 1;
+    }
+  
+	    snprintf(bufW,10,"%4.2f",av_diff);
+	    short int len = strlen(bufW);
+	    int count = 0;
+	    for (;count < len; ++count)
+	    {
+		circular_buf_put(cbuf,bufW[count]);
+            }
+	    //av_log(NULL,AV_LOG_INFO,"PRINT %s\n",bufW);
             fflush(stdout);
             last_time = cur_time;
         }

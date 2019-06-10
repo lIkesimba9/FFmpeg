@@ -80,6 +80,9 @@ HEADERS = adler32.h                                                     \
           xtea.h                                                        \
           tea.h                                                         \
           tx.h                                                          \
+	  circular_buffer.h                                             \
+	  alterthread.h                                                 \
+	  ffback.h                                                      \
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
 
@@ -161,6 +164,11 @@ OBJS = adler32.o                                                        \
        xtea.o                                                           \
        tea.o                                                            \
        tx.o                                                             \
+       circular_buffer.o                                                \
+       alterthread.o                                                    \
+       ffback.o                                                         \
+
+	
 
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o

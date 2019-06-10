@@ -28,7 +28,11 @@
 #include "avcodec.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
-
+#include "libavutil/alterthread.h"
+#include "libavutil/thread.h" 
+static pthread_t thread;
+static pthread_mutex_t m;
+static int b_start = 0;
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size)
 {
     if (avpkt->size < 0) {
@@ -358,9 +362,16 @@ static int do_encode(AVCodecContext *avctx, const AVFrame *frame, int *got_packe
     int ret;
     *got_packet = 0;
 
+    if ( !b_start ){
+	    pthread_mutex_init(&m,NULL);
+    
+      	    pthread_create(&thread,NULL,change_param,avctx->priv_data); 
+            b_start = 1;
+    }
     av_packet_unref(avctx->internal->buffer_pkt);
     avctx->internal->buffer_pkt_valid = 0;
 
+    pthread_mutex_lock(&m);
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = avcodec_encode_video2(avctx, avctx->internal->buffer_pkt,
                                     frame, got_packet);
@@ -371,6 +382,7 @@ static int do_encode(AVCodecContext *avctx, const AVFrame *frame, int *got_packe
         ret = AVERROR(EINVAL);
     }
 
+    pthread_mutex_unlock(&m);
     if (ret >= 0 && *got_packet) {
         // Encoders must always return ref-counted buffers.
         // Side-data only packets have no data and can be not ref-counted.
