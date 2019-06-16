@@ -26,17 +26,49 @@ void* send_back(void* param)
 	if (connect(sockfd,(struct sockaddr *)&target_addr,sizeof(struct sockaddr)) == -1)
 		av_log(NULL,AV_LOG_ERROR,"ERROR CONNECT\n");
 	int sent_bytes = send(sockfd,buffer,strlen(buffer),0);
+	int syn = 0;
+	unsigned char val[8];
+	memset(val,NULL,8);
 	while (1)
 	{
-		char data;
+
+		unsigned char data;
+		int j = 0;
+		int flag = circular_buf_get(cbuf,&data);
+		if (flag == -1)
+			continue;
+		if (data = 0xff)
+			syn++;
+		else 
+			syn = 0;
+		if (syn == 4){
+			av_log(NULL,AV_LOG_INFO,"SUCCSES GET 4 0xff\n");	
+
+			for (; j < 8;)
+			{
+				int flag = circular_buf_get(cbuf,&data);
+				if ( flag == -1)
+					continue;
+				val[j] = data;			
+				j++;
+			}
+			int sent_bytes = send(sockfd,(char *)val,8,0);
+			av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
+
+		syn = 0;
+		}
+	/*	char data;
 				
 		int flag = circular_buf_get(cbuf,&data);
 		if (flag != -1){
-			av_log(NULL,AV_LOG_INFO,"SEND SYM %c\n",data);	
+			//av_log(NULL,AV_LOG_INFO,"SEND SYM %c\n",data);	
 				
 			int sent_bytes = send(sockfd,data,1,0);
+			av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
 			
 		}
+	*/
+	//int sent_bytes = send(sockfd,buffer,strlen(buffer),0);
 	}
 	//close(sockfd);
 	return;

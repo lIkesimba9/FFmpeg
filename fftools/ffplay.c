@@ -67,7 +67,7 @@ static cbuf_handle_t cbuf;
 static pthread_t thread;
 static pthread_mutex_t m;
 static int b_start = 0;
-char bufW[10];
+char bufW[1024];
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
@@ -1738,14 +1738,21 @@ display:
       	    pthread_create(&thread,NULL,send_back,(void *)cbuf); 
             b_start = 1;
     }
+    if ( (vqsize / 1000) != 0 ){
   
-	    snprintf(bufW,10,"%4.2f",av_diff);
-	    short int len = strlen(bufW);
+	   // snprintf(bufW,10,"%4.2f",av_diff);
+	   // short int len = strlen(bufW);
 	    int count = 0;
-	    for (;count < len; ++count)
+	    circular_buf_put(cbuf,0xff);
+	    circular_buf_put(cbuf,0xff);
+	    circular_buf_put(cbuf,0xff);
+	    circular_buf_put(cbuf,0xff);
+	    void *point = &av_diff;
+	    for (;count < 8; ++count)
 	    {
-		circular_buf_put(cbuf,bufW[count]);
+		circular_buf_put(cbuf,*((unsigned char *)(point + count)));
             }
+    }
 	    //av_log(NULL,AV_LOG_INFO,"PRINT %s\n",bufW);
             fflush(stdout);
             last_time = cur_time;
