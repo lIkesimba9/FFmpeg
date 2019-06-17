@@ -20,7 +20,7 @@ void server_init(void *param)
 	struct sockaddr_in host_addr,client_addr;
 	socklen_t sin_size;
 	int recv_length = 1, yes = 1;
-	char buffer[1024];
+	unsigned char buffer[1024];
 	memset(buffer,NULL,1024);	
 	if ((sockfd = socket(PF_INET,SOCK_STREAM,0)) == -1 )
 		av_log(NULL,AV_LOG_ERROR,"ERROR OPEN SERVER SOCKET\n");
@@ -56,14 +56,16 @@ void server_init(void *param)
 		{
 			//printf("RECV: %d bytes\n",recv_length);
 			//printf("RECV: %s\n",buffer);
-			int m_crf = 20;
+			/*int m_crf = 20;
 			m_crf = buffer[0]-'0';
         		pthread_mutex_lock(&m);
 			x4->crf  = m_crf;
-   			pthread_mutex_unlock(&m);
+   			pthread_mutex_unlock(&m);*/
 			memset(buffer,NULL,1024);	
 			recv_length = recv(new_sockfd,&buffer,1024,0);
-			av_log(NULL,AV_LOG_INFO,"RECV SYM %c\n",buffer[0]);	
+			void *p = buffer;
+			double av_diff = *(double *)p;
+			av_log(NULL,AV_LOG_INFO,"av_diff = %f\n",av_diff);	
 		}
 		close(new_sockfd);
 	

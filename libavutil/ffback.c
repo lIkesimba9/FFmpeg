@@ -4,6 +4,7 @@
 #include "netinet/in.h"
 #include "circular_buffer.h"
 #include "log.h"
+#include "time.h"
 #include <stdio.h>
 /*ffback::ffback()
 {
@@ -14,6 +15,8 @@
 void* send_back(void* param)
 {
 	cbuf_handle_t cbuf = param;
+	//time_t t;
+	//t = time(&t);
 	int sockfd;
 	struct sockaddr_in target_addr;
 	char buffer[] = "1";
@@ -52,9 +55,12 @@ void* send_back(void* param)
 				val[j] = data;			
 				j++;
 			}
-			int sent_bytes = send(sockfd,(char *)val,8,0);
-			av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
-
+			//if (time(NULL) > t + 5)
+			//	{
+				int sent_bytes = send(sockfd,(char *)val,8,0);
+				av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
+			//	t_time = time(NULL);
+			//	}
 		syn = 0;
 		}
 	/*	char data;
