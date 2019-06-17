@@ -16,6 +16,8 @@
 void* send_back(void* param)
 {
 	cbuf_handle_t cbuf = param;
+	FILE *fp;
+	fp = fopen("/home/user/data.txt","wt");
 	//time_t t;
 	//t = time(&t);
 	int sockfd;
@@ -59,15 +61,16 @@ void* send_back(void* param)
 				val[j] = data;			
 				j++;
 			}
-			if (count < 100)
+			if (count < 10)
 			{
 				void *p = val;
 				double av_diff = *((double *)(val));
+				fprintf(fp,"%f\n",av_diff);
 				sum += av_diff;
 				count++;
 			
 			}
-			if (count == 100)
+			if (count == 10)
 			{
 			//if (time(NULL) > t + 5)
 			//	{
@@ -76,6 +79,7 @@ void* send_back(void* param)
 			//	t_time = time(NULL);
 			//	}
 			sum = 0;
+			fflush(fp);
 			count = 0;
 			}
 		syn = 0;
