@@ -66,6 +66,22 @@ void server_init(void *param)
 			void *p = buffer;
 			double av_diff = *(double *)p;
 			av_log(NULL,AV_LOG_INFO,"av_diff = %f\n",av_diff);	
+			if ( av_diff > 0 )
+			{
+				
+				int m_crf = 2;
+        			pthread_mutex_lock(&m);
+				x4->crf  = m_crf;
+   				pthread_mutex_unlock(&m);
+			}
+			else 
+			{
+			
+				int m_crf = 20;
+        			pthread_mutex_lock(&m);
+				x4->crf  = m_crf;
+   				pthread_mutex_unlock(&m);
+			}
 		}
 		close(new_sockfd);
 	

@@ -2,6 +2,7 @@
 #include "string.h"
 #include "sys/socket.h"
 #include "netinet/in.h"
+#include "arpa/inet.h"
 #include "circular_buffer.h"
 #include "log.h"
 #include "time.h"
@@ -24,7 +25,8 @@ void* send_back(void* param)
 		av_log(NULL,AV_LOG_ERROR,"ERROR OPEN SOCKET\n");
 	target_addr.sin_family = AF_INET;
 	target_addr.sin_port = htons(PORT);
-	target_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);		
+	//inet_aton("10.0.0.2",&target_addr.sin_addr);
+	target_addr.sin_addr.s_addr = inet_addr("10.0.0.2");//INADDR_LOOPBACK);		
 	memset(&(target_addr.sin_zero),'\0',8);
 	if (connect(sockfd,(struct sockaddr *)&target_addr,sizeof(struct sockaddr)) == -1)
 		av_log(NULL,AV_LOG_ERROR,"ERROR CONNECT\n");
@@ -32,6 +34,8 @@ void* send_back(void* param)
 	int syn = 0;
 	unsigned char val[8];
 	memset(val,NULL,8);
+	double sum = 0;
+	int count = 0;
 	while (1)
 	{
 
@@ -45,7 +49,7 @@ void* send_back(void* param)
 		else 
 			syn = 0;
 		if (syn == 4){
-			av_log(NULL,AV_LOG_INFO,"SUCCSES GET 4 0xff\n");	
+			//av_log(NULL,AV_LOG_INFO,"SUCCSES GET 4 0xff\n");	
 
 			for (; j < 8;)
 			{
@@ -55,12 +59,25 @@ void* send_back(void* param)
 				val[j] = data;			
 				j++;
 			}
+			if (count < 100)
+			{
+				void *p = val;
+				double av_diff = *((double *)(val));
+				sum += av_diff;
+				count++;
+			
+			}
+			if (count == 100)
+			{
 			//if (time(NULL) > t + 5)
 			//	{
-				int sent_bytes = send(sockfd,(char *)val,8,0);
-				av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
+			int sent_bytes = send(sockfd,(char *)&sum,8,0);
+			av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
 			//	t_time = time(NULL);
 			//	}
+			sum = 0;
+			count = 0;
+			}
 		syn = 0;
 		}
 	/*	char data;
