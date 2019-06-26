@@ -68,6 +68,7 @@ static pthread_t thread;
 static pthread_mutex_t m;
 static int b_start = 0;
 char bufW[1024];
+#define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
@@ -313,6 +314,7 @@ typedef struct VideoState {
 
     SDL_cond *continue_read_thread;
 } VideoState;
+VideoState *for_close; 
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
@@ -370,7 +372,6 @@ static int64_t audio_callback_time;
 
 static AVPacket flush_pkt;
 
-#define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
@@ -1324,6 +1325,16 @@ static void do_exit(VideoState *is)
     exit(0);
 }
 
+static void do_exit_thread(int sig)
+{
+	if (sig == SIGINT)
+	{
+		//av_log(NULL,AV_LOG_INFO,"SINAL Ctr-C\n",NULL);
+		//SDL_EventState(FF_QUIT_EVENT,SDL_ENABLE);
+		
+		do_exit(for_close);
+	}
+}
 static void sigterm_handler(int sig)
 {
     exit(123);
@@ -1737,6 +1748,7 @@ display:
    	    cbuf = circular_buf_init(buf,64); 
       	    pthread_create(&thread,NULL,send_back,(void *)cbuf); 
             b_start = 1;
+	    signal(SIGINT,do_exit_thread);
     }
     if ( (vqsize / 1000) != 0 ){
   
@@ -3698,7 +3710,7 @@ int main(int argc, char **argv)
 {
     int flags;
     VideoState *is;
-
+    for_close = is;
     init_dynload();
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
