@@ -28,7 +28,7 @@ void* send_back(void* param)
 	target_addr.sin_family = AF_INET;
 	target_addr.sin_port = htons(PORT);
 	//inet_aton("10.0.0.2",&target_addr.sin_addr);
-	target_addr.sin_addr.s_addr = inet_addr("10.0.0.2");//INADDR_LOOPBACK);		
+	target_addr.sin_addr.s_addr = inet_addr("10.0.0.1");//INADDR_LOOPBACK);		
 	memset(&(target_addr.sin_zero),'\0',8);
 	if (connect(sockfd,(struct sockaddr *)&target_addr,sizeof(struct sockaddr)) == -1)
 		av_log(NULL,AV_LOG_ERROR,"ERROR CONNECT\n");
@@ -38,10 +38,12 @@ void* send_back(void* param)
 	memset(val,NULL,8);
 	double sum = 0;
 	int count = 0;
+	int c_fl = 0;
 	while (1)
 	{
 
 		unsigned char data;
+		c_fl++;
 		int j = 0;
 		int flag = circular_buf_get(cbuf,&data);
 		if (flag == -1)
@@ -74,15 +76,18 @@ void* send_back(void* param)
 			{
 			//if (time(NULL) > t + 5)
 			//	{
-			int sent_bytes = send(sockfd,(char *)&sum,8,0);
-			av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
+			//int sent_bytes = send(sockfd,(char *)&sum,8,0);
+			//av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
 			//	t_time = time(NULL);
 			//	}
-			sum = 0;
 			fflush(fp);
+			sum = 0;
 			count = 0;
 			}
-		syn = 0;
+			//if (c_fl == 100)
+			//{
+			//}
+			syn = 0;
 		}
 	/*	char data;
 				
@@ -98,5 +103,5 @@ void* send_back(void* param)
 	//int sent_bytes = send(sockfd,buffer,strlen(buffer),0);
 	}
 	//close(sockfd);
-	return;
+return;
 }
