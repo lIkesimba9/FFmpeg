@@ -62,12 +62,19 @@
 #include <assert.h>
 #include "libavutil/ffback.h"
 #include "libavutil/thread.h" 
+typedef struct thread_param
+	{
+
+cbuf_handle_t cbuf; 
+int m_run;
+
+	} thread_param;
 unsigned char *buf;
-static cbuf_handle_t cbuf; 
 static pthread_t thread;
 static pthread_mutex_t m;
 static int b_start = 0;
 char bufW[1024];
+thread_param m_param;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
@@ -1331,7 +1338,12 @@ static void do_exit_thread(int sig)
 	{
 		//av_log(NULL,AV_LOG_INFO,"SINAL Ctr-C\n",NULL);
 		//SDL_EventState(FF_QUIT_EVENT,SDL_ENABLE);
+		int status;
 		
+		m_param.m_run = 0;
+		//int res = pthread_join(thread,&status);	
+		//if (res != 0)
+		//	av_log(NULL,AV_LOG_ERROR,"ERROR JOIN thread",NULL);
 		do_exit(for_close);
 	}
 }
@@ -1745,8 +1757,9 @@ display:
     if ( !b_start ){
 	    pthread_mutex_init(&m,NULL);
 	    buf = malloc(64 * sizeof(unsigned char));
-   	    cbuf = circular_buf_init(buf,64); 
-      	    pthread_create(&thread,NULL,send_back,(void *)cbuf); 
+   	    m_param.cbuf = circular_buf_init(buf,64); 
+	    m_param.m_run = 1;
+      	    pthread_create(&thread,NULL,send_back,(void *)(&m_param)); 
             b_start = 1;
 	    signal(SIGINT,do_exit_thread);
     }
@@ -1755,14 +1768,14 @@ display:
 	   // snprintf(bufW,10,"%4.2f",av_diff);
 	   // short int len = strlen(bufW);
 	    int count = 0;
-	    circular_buf_put(cbuf,0xff);
-	    circular_buf_put(cbuf,0xff);
-	    circular_buf_put(cbuf,0xff);
-	    circular_buf_put(cbuf,0xff);
+	    circular_buf_put(m_param.cbuf,0xff);
+	    circular_buf_put(m_param.cbuf,0xff);
+	    circular_buf_put(m_param.cbuf,0xff);
+	    circular_buf_put(m_param.cbuf,0xff);
 	    void *point = &av_diff;
 	    for (;count < 8; ++count)
 	    {
-		circular_buf_put(cbuf,*((unsigned char *)(point + count)));
+		circular_buf_put(m_param.cbuf,*((unsigned char *)(point + count)));
             }
     }
 	    //av_log(NULL,AV_LOG_INFO,"PRINT %s\n",bufW);

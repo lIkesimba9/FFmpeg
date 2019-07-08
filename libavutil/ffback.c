@@ -8,9 +8,17 @@
 #include "time.h"
 #include <stdio.h>
 #define PORT 7890
+typedef struct thread_param
+	{
+
+cbuf_handle_t cbuf; 
+int m_run;
+
+	} thread_param;
 void* send_back(void* param)
 {
-	cbuf_handle_t cbuf = param;
+	cbuf_handle_t cbuf = ((thread_param *)param)->cbuf;
+	int term = ((thread_param *)param)->m_run;
 	FILE *fp;
 	fp = fopen("/home/user/data.txt","wt");
 	int sockfd;
@@ -31,7 +39,7 @@ void* send_back(void* param)
 	double sum = 0;
 	int count = 0;
 	int c_fl = 0;
-	while (1)
+	while (term == 1)
 	{
 
 		unsigned char data;
@@ -66,7 +74,7 @@ void* send_back(void* param)
 			{
 			//int sent_bytes = send(sockfd,(char *)&sum,8,0);
 			//av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);	
-			fflush(fp);
+			//fflush(fp);
 			sum = 0;
 			count = 0;
 			}
@@ -74,5 +82,6 @@ void* send_back(void* param)
 		}
 			
 	}
+fclose(fp);
 return;
 }
