@@ -7,7 +7,6 @@
 #include "log.h"
 #include "time.h"
 #include <stdio.h>
-#define PORT 7890
 typedef struct thread_param
 	{
 
@@ -15,6 +14,54 @@ cbuf_handle_t cbuf;
 int m_run;
 
 	} thread_param;
+void pars_conn_param(int *port,char *ip)
+{
+	FILE *fp;
+	fp = fopen("/etc/ffback.cfg","rt");
+	if (fp == NULL)
+		av_log(NULL,AV_LOG_ERROR,"ERROR LOAD IP CONFIG",NULL);
+        char *data =(char *)malloc(sizeof(char) * 16);
+	memset(data,NULL,16);
+	fscanf(fp,"%s",data);
+        #ifdef debug
+	printf("%s\n",data);
+	#endif
+	if (memcmp(data,"[network]",strlen("[network]")) == 0)
+	{
+		int i = 0;
+		while (i < 2)
+		{
+			char *key = malloc(sizeof(char) * 5 );
+			memset(key,NULL,5);
+			fscanf(fp,"%s",key);
+                        #ifdef debug
+			printf("%s\n",key);
+			#endif
+			if (memcmp(key,"ip",strlen("ip")) == 0)
+			{
+//				char *ip_m = malloc(sizeof(char) * 15);
+//				memset(ip_m,NULL,15);
+                                fscanf(fp,"%s",ip);
+                                #ifdef debug
+                //				printf("%s",ip_m);
+                                printf("%s\n",ip);
+                                #endif
+			}
+			if (memcmp(key,"port",strlen("port")) == 0)
+			{
+				fscanf(fp,"%d",port);
+                                #ifndef debug
+				printf("%d\n",*port);
+				#endif
+			}
+			i++;
+		}
+			
+	}
+fclose(fp);
+
+}
+
 void* send_back(void* param)
 {
 	cbuf_handle_t cbuf = ((thread_param *)param)->cbuf;
@@ -27,8 +74,12 @@ void* send_back(void* param)
 	if((sockfd = socket(PF_INET,SOCK_STREAM,0))== -1)
 		av_log(NULL,AV_LOG_ERROR,"ERROR OPEN SOCKET\n");
 	target_addr.sin_family = AF_INET;
+	char *IP_ADDR = malloc(sizeof(char) * 16);
+	memset(IP_ADDR,NULL,16);
+	int PORT;
+	pars_conn_param(&PORT,IP_ADDR);
 	target_addr.sin_port = htons(PORT);
-	target_addr.sin_addr.s_addr = inet_addr("127.0.0.1");//"10.0.0.1");//INADDR_LOOPBACK);		
+	target_addr.sin_addr.s_addr = inet_addr(IP_ADDR);//"10.0.0.1");//INADDR_LOOPBACK);		
 	memset(&(target_addr.sin_zero),'\0',8);
 	if (connect(sockfd,(struct sockaddr *)&target_addr,sizeof(struct sockaddr)) == -1)
 		av_log(NULL,AV_LOG_ERROR,"ERROR CONNECT\n");
