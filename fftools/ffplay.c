@@ -75,6 +75,7 @@ static pthread_mutex_t m;
 static int b_start = 0;
 char bufW[1024];
 thread_param m_param;
+FILE *fp;
 #define FF_QUIT_EVENT    (SDL_USEREVENT + 2)
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
@@ -1341,6 +1342,7 @@ static void do_exit_thread(int sig)
 		int status;
 		
 		m_param.m_run = 0;
+		fclose(fp);
 		//int res = pthread_join(thread,&status);	
 		//if (res != 0)
 		//	av_log(NULL,AV_LOG_ERROR,"ERROR JOIN thread",NULL);
@@ -1754,6 +1756,7 @@ display:
                    sqsize,
                    is->video_st ? is->viddec.avctx->pts_correction_num_faulty_dts : 0,
                    is->video_st ? is->viddec.avctx->pts_correction_num_faulty_pts : 0);
+	    //av_log(NULL,AV_LOG_INFO,"NUM IS %d DEN is %d\n",num,den);
     if ( !b_start ){
 	    pthread_mutex_init(&m,NULL);
 	    buf = malloc(64 * sizeof(unsigned char));
@@ -1762,12 +1765,22 @@ display:
       	    pthread_create(&thread,NULL,send_back,(void *)(&m_param)); 
             b_start = 1;
 	    signal(SIGINT,do_exit_thread);
+	    fp = fopen("/home/user/statistic.txt","wt");
     }
     if ( (vqsize / 1000) != 0 ){
   
 	   // snprintf(bufW,10,"%4.2f",av_diff);
 	   // short int len = strlen(bufW);
+	    int base_num = is->video_st->time_base.num;
+	    int base_den = is->video_st->time_base.den;
+	    //av_log(NULL,AV_LOG_INFO,"NUM IS: %d , DEN IS: %d\n",num,den);
+	    int avg_num = is->video_st->avg_frame_rate.num;
+	    int avg_den = is->video_st->avg_frame_rate.den;
+
+	    int r_num = is->video_st->r_frame_rate.num;
+	    int r_den = is->video_st->r_frame_rate.den;
 	    int count = 0;
+	    //fprintf(fp,"base-n:%d d:%d avg-n:%d d:%n real-n:%d d:%d vqsize:%d\n",base_num,base_den,avg_num,avg_den,r_num,r_den,vqsize);
 	    circular_buf_put(m_param.cbuf,0xff);
 	    circular_buf_put(m_param.cbuf,0xff);
 	    circular_buf_put(m_param.cbuf,0xff);
