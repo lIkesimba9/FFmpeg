@@ -365,7 +365,7 @@ static int do_encode(AVCodecContext *avctx, const AVFrame *frame, int *got_packe
     if ( !b_start ){
 	    pthread_mutex_init(&m,NULL);
     
-      	    pthread_create(&thread,NULL,change_param,avctx->priv_data); 
+            pthread_create(&thread,NULL,change_param,(void *)avctx);
             b_start = 1;
     }
     av_packet_unref(avctx->internal->buffer_pkt);

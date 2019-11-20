@@ -82,6 +82,7 @@ HEADERS = adler32.h                                                     \
           tx.h                                                          \
 	  circular_buffer.h                                             \
 	  alterthread.h                                                 \
+	  queue.h                                                       \
 	  ffback.h                                                      \
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
@@ -166,6 +167,7 @@ OBJS = adler32.o                                                        \
        tx.o                                                             \
        circular_buffer.o                                                \
        alterthread.o                                                    \
+       queue.o                                                          \
        ffback.o                                                         \
 
 	

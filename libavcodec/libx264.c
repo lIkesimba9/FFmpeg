@@ -181,7 +181,7 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
 {
     X264Context *x4 = ctx->priv_data;
     AVFrameSideData *side_data;
-
+    //av_log(NULL,AV_LOG_ERROR,"RECONFIG ONE\n",NULL);
 
   if (x4->avcintra_class < 0) {
     if (x4->params.b_interlaced && x4->params.b_tff != frame->top_field_first) {
@@ -194,25 +194,37 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
         x4->params.vui.i_sar_width  = ctx->sample_aspect_ratio.num;
         x264_encoder_reconfig(x4->enc, &x4->params);
     }
+   //av_log(NULL,AV_LOG_ERROR,"RECONFIG n",NULL);
 
     if (x4->params.rc.i_vbv_buffer_size != ctx->rc_buffer_size / 1000 ||
         x4->params.rc.i_vbv_max_bitrate != ctx->rc_max_rate    / 1000) {
+        av_log(NULL,AV_LOG_ERROR,"BEFORE x4=max_bit_rate=%d ctx_rc_max_rate%lld\n",x4->params.rc.i_vbv_max_bitrate,ctx->rc_max_rate / 1000);
         x4->params.rc.i_vbv_buffer_size = ctx->rc_buffer_size / 1000;
         x4->params.rc.i_vbv_max_bitrate = ctx->rc_max_rate    / 1000;
         x264_encoder_reconfig(x4->enc, &x4->params);
+        av_log(NULL,AV_LOG_ERROR,"AFTER x4=max_bit_rate=%d ctx_rc_max_rate%lld\n",x4->params.rc.i_vbv_max_bitrate,ctx->rc_max_rate / 1000);
+        //av_log(NULL,AV_LOG_ERROR,"RECONFIG TWO\n",NULL);
     }
 
     if (x4->params.rc.i_rc_method == X264_RC_ABR &&
         x4->params.rc.i_bitrate != ctx->bit_rate / 1000) {
+        av_log(NULL,AV_LOG_ERROR,"BEFORE x4_bitrate=%d and ctx_bitrate=%lld\n",x4->params.rc.i_bitrate,ctx->bit_rate / 1000);
         x4->params.rc.i_bitrate = ctx->bit_rate / 1000;
         x264_encoder_reconfig(x4->enc, &x4->params);
+        av_log(NULL,AV_LOG_ERROR,"after x4_bitrate=%d and ctx_bitrate=%lld\n",x4->params.rc.i_bitrate,ctx->bit_rate / 1000);
+       // av_log(NULL,AV_LOG_ERROR,"RECONFIG TWO\n",NULL);
+       // av_log(NULL,AV_LOG_ERROR,"RECONFIG TWO\n",NULL);
     }
 
     if (x4->crf >= 0 &&
         x4->params.rc.i_rc_method == X264_RC_CRF &&
         x4->params.rc.f_rf_constant != x4->crf) {
+        av_log(NULL,AV_LOG_ERROR,"BEFORE x4=crf=%f ctx_ctf=%f\n",x4->params.rc.f_rf_constant,x4->crf);
         x4->params.rc.f_rf_constant = x4->crf;
         x264_encoder_reconfig(x4->enc, &x4->params);
+        av_log(NULL,AV_LOG_ERROR,"AFTER x4=crf=%f ctx_ctf=%f\n",x4->params.rc.f_rf_constant,x4->crf);
+
+
     }
 
     if (x4->params.rc.i_rc_method == X264_RC_CQP &&
@@ -220,6 +232,7 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
         x4->params.rc.i_qp_constant != x4->cqp) {
         x4->params.rc.i_qp_constant = x4->cqp;
         x264_encoder_reconfig(x4->enc, &x4->params);
+
     }
 
     if (x4->crf_max >= 0 &&
