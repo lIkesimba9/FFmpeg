@@ -13,6 +13,7 @@ static pthread_mutex_t m;
 
 void server_init(void *param)
 {
+    int flag = 1;
     AVCodecContext *avctx = (AVCodecContext *)param;
     X264Context *x4 = (X264Context *)(avctx->priv_data);
 
@@ -41,7 +42,7 @@ void server_init(void *param)
         av_log(NULL,AV_LOG_INFO," LISTIN\n");
     //sleep(30);
     unsigned int nul_vall = 0;
-    int flag = 0;
+    //int flag = 0;
     while (1)
     {
         sin_size = sizeof(struct sockaddr_in);
@@ -65,21 +66,19 @@ void server_init(void *param)
                         pthread_mutex_unlock(&m);*/
             memset(buffer,NULL,4);
             recv_length = recv(new_sockfd,buffer,4,0);
-            void *p = buffer;
-            if (flag == 0)
-            {
-                nul_vall =  *(unsigned int *)p;
-                flag = 1;
-                av_log(NULL,AV_LOG_ERROR,"transit= %u\n",nul_vall);
-
-            }
-            unsigned int transit = *(unsigned int *)p;
+            //void *p = buffer;
+            unsigned int transit = *(unsigned int *)buffer;
+             av_log(NULL,AV_LOG_ERROR,"K= %u\n",transit);
+             transit = transit / 100;
+             av_log(NULL,AV_LOG_ERROR,"K= %u\n",transit);
            // av_log(NULL,AV_LOG_INFO,"transit= %u\n",(transit > nul_vall? transit - nul_vall:nul_vall -transit));
-            if ( (transit > nul_vall? transit - nul_vall:nul_vall -transit)  > 6000000  )
+            if ( /*( transit < 400 ) &&*/ ( transit > 300) && flag  )
             {           //    3165288575
 
                 //float m_crf = 40;
-                float m_crf = 10;
+                float m_crf = 27;
+                av_log(NULL,AV_LOG_INFO,"crf= %f\n",x4->crf);
+
                 pthread_mutex_lock(&m);
                 // x4->crf  = m_crf; //work it
                 // avctx->bit_rate = 250000;
@@ -92,13 +91,14 @@ void server_init(void *param)
                 // avctx->rc_max_rate = 250000;
                 //x264_encoder_reconfig(x4->enc, &x4->params);
                 //avctx->bit_rate = 1000000;
-                //x4->crf = m_crf;
-                avctx->rc_max_rate = 1000000;
-                avctx->bit_rate = 1000000;
+                x4->crf = m_crf;
+                //avctx->rc_max_rate = 1000000;
+                //avctx->bit_rate = 1000000;
                 pthread_mutex_unlock(&m);
 
-                // av_log(NULL,AV_LOG_INFO,"crf= %f\n",x4->crf);
-                av_log(NULL,AV_LOG_ERROR,"change bit_rate\n",NULL);
+                 av_log(NULL,AV_LOG_INFO,"crf= %f\n",x4->crf);
+                 flag = 0;
+                //av_log(NULL,AV_LOG_ERROR,"change bit_rate\n",NULL);
 
                 //x4->bit_rate = 250000;
                 // x4->rc_max_rate

@@ -243,14 +243,14 @@ void* send_back(void* param)
                 av_log(NULL,AV_LOG_ERROR,"QUEUE FULL\n",NULL);
             }
 //            av_log(NULL,AV_LOG_ERROR,"BEFORE DETECT\n",NULL);
-            if (c_val - avg > max - min_m)
+            if ( (c_val - avg) > (3.5 * (max - min_m )))
             {
 
                 av_log(NULL,AV_LOG_ERROR,"DETECT CHANGE CHANEL\n",NULL);
                 detect = true;
             }
             if (detect){
-                if (count_new == 0 )
+                if (count_new == 100 )
                 {
                     // sum (q[i]/100)  / sec[win_size] - sec[0]
                     //  av_log(NULL,AV_LOG_ERROR,"DETECT CHANGE CHANEL\n",NULL);
@@ -260,10 +260,10 @@ void* send_back(void* param)
                     long seconds = mt1.tv_sec;
                     long ns = mt1.tv_nsec;
                     time_1 = (double)seconds + (double)ns/(double)1000000000;
-                    y_1 = sumQueue(sg);
+                    y_1 = sg_val;
 
                 }
-                if (count_new == 100)
+                if (count_new == 200)
                 {
 
                     struct timespec mt1;
@@ -272,19 +272,22 @@ void* send_back(void* param)
                     long ns = mt1.tv_nsec;
                     time_2 = (double)seconds + ns/1000000000.;
 
-                    y_2 = sumQueue(sg);
+                    y_2 = sg_val;
                     av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u\n",c_val,avg,max,min_m);
                     av_log(NULL,AV_LOG_ERROR,"time=%.3f\n",time_2 -time_1);
-                    av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / (100 * (time_2 -time_1) ));
+                    av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / ( (time_2 -time_1) ));
+                    unsigned int K = (y_2 - y_1) /  (time_2 -time_1);
+                    int sent_bytes = send(sockfd,(char *)&K,4,0);
                 }
                 count_new++;
-                if (count_new > 100)
+
+              /*  if (count_new > 200)
                 {
                     av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u\n",c_val,avg,max,min_m);
                     av_log(NULL,AV_LOG_ERROR,"time=%.3f\n",time_2 -time_1);
-                    av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / ( 100 * (time_2 -time_1) ));
+                    av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / ( (time_2 -time_1) ));
                     av_log(NULL,AV_LOG_ERROR,"y_1=%.3f y_2=%.3f\n",y_1,y_2);
-                }
+                }*/
             }
 
 
