@@ -10,6 +10,7 @@
 #include <sys/resource.h>
 #include <stdio.h>
 //#include "Queue.h"
+#define LEN_COMMAND 4
 
 typedef struct thread_param
 {
@@ -104,6 +105,7 @@ void* send_back(void* param)
     int term = ((thread_param *)param)->m_run;
     //FILE *fp;
     int sockfd;
+    int commad = 0;
     struct sockaddr_in target_addr;
     char buffer[] = "1";
     if((sockfd = socket(PF_INET,SOCK_STREAM,0))== -1)
@@ -127,6 +129,7 @@ void* send_back(void* param)
     int c_fl = 0;
     bool first_flag = false;
     int next = 0;
+    bool send_flag = false;
     unsigned int nul_val = 0;
     double avg = 0;
     unsigned int min_m = 0;
@@ -139,8 +142,15 @@ void* send_back(void* param)
     double cur_av = 0;
     double time_1 = 0;
     double time_2 = 0;
-    bool detect = false;
+    bool detect = true;
+    bool send_detect = false;
+    struct timespec mtime_last_send;
+    clock_gettime (CLOCK_REALTIME, &mtime_last_send);
+    long seconds_last_send = 0;
+    bool flag_wait = true;
+    long wait_second = 0;
     double sg_val;
+    int count_miss = 0;
     while (term == 1)
     {
 
@@ -215,16 +225,16 @@ void* send_back(void* param)
 
             if (c_i == 100)
             {
-                  av_log(NULL,AV_LOG_ERROR,"BEGIN SUM\n",NULL);
+                av_log(NULL,AV_LOG_ERROR,"BEGIN SUM\n",NULL);
 
-                 sg_val = sumQueueUnsigned(q);
+                sg_val = sumQueueUnsigned(q);
 
-                 av_log(NULL,AV_LOG_ERROR,"END SUM Q SIZE IS %d\n",q->size);
+                av_log(NULL,AV_LOG_ERROR,"END SUM Q SIZE IS %d\n",q->size);
             }
 
         }
 
-             else
+        else
         {
 
             //av_log(NULL,AV_LOG_ERROR,"avg=%.3f cur_avg=%.3f",avg,cur_av);
@@ -236,17 +246,144 @@ void* send_back(void* param)
             sg_val = sg_val + ((double)(c_val ) / 100);
             enqueue(q,c_val); // - avg);
             //   av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u\n",c_val,avg,max,min_m);
+            //  int sent_bytes = send(sockfd,(char *)&K,4,0);
+
+            //            av_log(NULL,AV_LOG_ERROR,"BEFORE DETECT\n",NULL);
 
 
-//            av_log(NULL,AV_LOG_ERROR,"BEFORE DETECT\n",NULL);
-            if ( (c_val - avg) > ( 5 * (max - min_m )) )
+            if ( (c_val - avg) > 3.5 * ( (max - min_m )) )
             {
 
                 av_log(NULL,AV_LOG_ERROR,"DETECT CHANGE CHANEL\n",NULL);
-                detect = true;
+
+                if (detect)
+                {
+                    commad = 29;
+                    int sent_bytes = send(sockfd,(char *)&commad,4,0);
+                    av_log(NULL,AV_LOG_ERROR,"SEND CRF=29\n",NULL);
+
+                    count_miss = 0;
+                    send_flag = true;
+                    flag_wait = true;
+                }
+                /* if (send_detect)
+                {
+                    commad = -1;
+                    int sent_bytes = send(sockfd,(char *)&commad,4,0);
+                    struct timespec cur_time;
+                    clock_gettime (CLOCK_REALTIME, &cur_time);
+                    long seconds_curr = cur_time.tv_sec;
+                    seconds_last_send = seconds_curr;
+
+
+
+                }*/
+                detect = false;
+                continue;
+
             }
-            if (detect){
-                if (count_new == 60 )
+
+            else {
+                /*   if (count_miss < 200){
+                    count_miss++;
+                    continue;
+                }*/
+                if ( (commad != 0) && send_flag){
+
+                    struct timespec cur_time;
+                    clock_gettime (CLOCK_REALTIME, &cur_time);
+                    long cur_second = 0;
+                    if (flag_wait)
+                    {
+                        wait_second = cur_time.tv_sec;
+                        flag_wait = false;
+                    }
+                    else
+                    {
+                        cur_second = cur_time.tv_sec;
+                    }
+                    if ( cur_second - wait_second > 20) //{
+                    {
+                            if (  (c_val - avg) >  1.3 * ( (max - min_m )) )
+                            {
+                                if (send_flag){
+                                    commad = -2;
+                                    int sent_bytes = send(sockfd,(char *)&commad,4,0);
+                                    clock_gettime (CLOCK_REALTIME, &mtime_last_send);
+                                    long seconds_last_send = mtime_last_send.tv_sec;
+
+                                    av_log(NULL,AV_LOG_ERROR,"SEND -2!!!!!!\n",NULL);
+                                    send_flag = false;
+                                    detect = true;
+
+                                }
+                            }
+
+
+
+                        if (count_new == 0)
+                        {
+                            struct timespec mt1;
+                            clock_gettime (CLOCK_REALTIME, &mt1);
+                            long seconds = mt1.tv_sec;
+                            long ns = mt1.tv_nsec;
+                            time_1 = (double)seconds + (double)ns/(double)1000000000;
+                            y_1 = sg_val;
+                        }
+                        if (count_new == 100)
+                        {
+                            struct timespec mt1;
+                            clock_gettime (CLOCK_REALTIME, &mt1);
+                            long seconds = mt1.tv_sec;
+                            long ns = mt1.tv_nsec;
+                            time_2 = (double)seconds + ns/1000000000.;
+                            y_2 = sg_val;
+
+                            av_log(NULL,AV_LOG_ERROR,"K=%.3f\n", ((y_2 - y_1) / ( (time_2 -time_1) ) ) / 100);
+                            int K = ( (y_2 - y_1) /  (time_2 -time_1) ) / 100;
+
+
+
+                            if(  (  (seconds -seconds_last_send) > 3) )
+                            {
+                                av_log(NULL,AV_LOG_ERROR,"DIFF TIME=%lld\n", ( seconds -seconds_last_send ));
+                                seconds_last_send = seconds;
+
+
+
+
+
+                                if (send_flag){
+                                    commad = 1;
+                                    int sent_bytes = send(sockfd,(char *)&commad,4,0);
+                                    clock_gettime (CLOCK_REALTIME, &mtime_last_send);
+                                    long seconds_last_send = mtime_last_send.tv_sec;
+
+                                    av_log(NULL,AV_LOG_ERROR,"SEND 1!!!!!!\n",NULL);
+
+                                }
+
+
+
+
+
+
+
+
+                            }
+                            count_new = 0;
+
+                        }
+                        count_new++;
+                    }
+                    else
+                        continue;
+                }
+
+
+
+
+                /*   if (count_new == 60 )
                 {
                     // sum (q[i]/100)  / sec[win_size] - sec[0]
                     //  av_log(NULL,AV_LOG_ERROR,"DETECT CHANGE CHANEL\n",NULL);
@@ -273,11 +410,11 @@ void* send_back(void* param)
                     av_log(NULL,AV_LOG_ERROR,"time=%.3f\n",time_2 -time_1);
                     av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / ( (time_2 -time_1) ));
                     unsigned int K = (y_2 - y_1) /  (time_2 -time_1);
-                    int sent_bytes = send(sockfd,(char *)&K,4,0);
+
                 }
                 count_new++;
-
-              /*  if (count_new > 200)
+                    */
+                /*  if (count_new > 200)
                 {
                     av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u\n",c_val,avg,max,min_m);
                     av_log(NULL,AV_LOG_ERROR,"time=%.3f\n",time_2 -time_1);

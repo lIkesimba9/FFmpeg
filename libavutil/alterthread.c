@@ -42,6 +42,7 @@ float bitrate_to_crf(double bitrate)
 
 void server_init(void *param)
 {
+    float new_crf = 0;
     int flag = 1;
     AVCodecContext *avctx = (AVCodecContext *)param;
     X264Context *x4 = (X264Context *)(avctx->priv_data);
@@ -98,36 +99,32 @@ void server_init(void *param)
             memset(buffer,NULL,4);
             recv_length = recv(new_sockfd,buffer,4,0);
             //void *p = buffer;
-            unsigned int transit = *(unsigned int *)buffer;
-             av_log(NULL,AV_LOG_ERROR,"K= %u\n",transit);
-             transit = transit / 100;
-             av_log(NULL,AV_LOG_ERROR,"K= %u\n",transit);
-            double diff = 0;
-            if ( (transit > 0) && (transit < 200) )
-                diff = 200;
-            if ( (transit > 200) && (transit < 300) )
-                diff = 300;
-            if ( (transit > 300) && (transit < 400) )
-                diff = 400;
-            if ( (transit > 400) && (transit < 500) )
-                diff = 500;
-            if ( (transit > 500) && (transit < 600) )
-                diff = 600;
+             int transit = *( int *)buffer;
+             av_log(NULL,AV_LOG_ERROR,"RECV transit is =%d\n",transit);
 
-            av_log(NULL,AV_LOG_INFO,"diff_bit= %f\n",diff);
+            switch (transit) {
+            case 29:
+                new_crf = 29;
+                break;
 
-            double cur_bit = crf_to_bitrate(x4->crf);
-            av_log(NULL,AV_LOG_INFO,"cur_bit= %f\n",cur_bit);
-            float new_crf = bitrate_to_crf(cur_bit - diff);
-            av_log(NULL,AV_LOG_INFO,"new_ctf= %f\n",new_crf);
+            case -2:
+                new_crf = new_crf + 2;
+                break;
 
+            case 1:
+                new_crf = new_crf - 1;
+                break;
 
+            default:
+                break;
+            }
+            av_log(NULL,AV_LOG_ERROR,"old_crf= %f\n",x4->crf);
                 pthread_mutex_lock(&m);
 
                 x4->crf = new_crf;
                 pthread_mutex_unlock(&m);
 
-                 av_log(NULL,AV_LOG_INFO,"crf= %f\n",x4->crf);
+                av_log(NULL,AV_LOG_ERROR,"new_crf= %f\n",x4->crf);
 
         }
         close(new_sockfd);
