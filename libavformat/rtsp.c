@@ -2161,7 +2161,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     if (b_start == 0)
     {
         b_start = 1;
-        fp = fopen("/home/user/statictic1.txt","wt");
+        fp = fopen("/home/simba9/Diplom/model/transit.txt","wt");
         if (fp == 0)
             av_log(NULL,AV_LOG_ERROR,"ERROR OPEN FILE",NULL);
         pthread_mutex_init(&m,NULL);

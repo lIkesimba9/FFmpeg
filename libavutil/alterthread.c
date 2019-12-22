@@ -1,14 +1,43 @@
 #include "alterthread.h"
 #include "log.h"
-/*
-alerthread::alerthread()
-{
 
-}
-*/
+
 
 static pthread_mutex_t m;
+// this poly for range 20-30 crf ...
+double crf_to_bitrate(float crf)
 
+{
+    //[-2.299, 10.886, -19.27, 33.15]
+    double bitrate = 0;
+    double poly[] = {-2.13, 178.72, -5056.6, 48613.58};
+    int i = 3;
+    int step = 0;
+    for (i;i >= 0;i--)
+    {
+        bitrate +=  ( poly[i] * pow(crf,step) );
+        step++;
+
+    }
+    return bitrate;
+}
+float bitrate_to_crf(double bitrate)
+{
+
+    float crf = 0;
+    //[-2.299, 10.886, -19.27, 33.15]
+    bitrate = bitrate/1000.;
+    double poly[] = {-2.299, 10.886, -19.27, 33.15};
+    int i = 3;
+    int step = 0;
+    for (i;i >= 0;i--)
+    {
+        crf +=  ( poly[i] * pow(bitrate,step) );
+        step++;
+
+    }
+    return round(crf+0.5);
+}
 
 
 void server_init(void *param)
@@ -64,6 +93,8 @@ void server_init(void *param)
                         pthread_mutex_lock(&m);
                         x4->crf  = m_crf;
                         pthread_mutex_unlock(&m);*/
+            //av_log(NULL,AV_LOG_INFO,"bitrate=%lld\n",avctx->bit_rate);
+            //continue;
             memset(buffer,NULL,4);
             recv_length = recv(new_sockfd,buffer,4,0);
             //void *p = buffer;
@@ -71,48 +102,33 @@ void server_init(void *param)
              av_log(NULL,AV_LOG_ERROR,"K= %u\n",transit);
              transit = transit / 100;
              av_log(NULL,AV_LOG_ERROR,"K= %u\n",transit);
-           // av_log(NULL,AV_LOG_INFO,"transit= %u\n",(transit > nul_vall? transit - nul_vall:nul_vall -transit));
-            if ( /*( transit < 400 ) &&*/ ( transit > 300) && flag  )
-            {           //    3165288575
+            double diff = 0;
+            if ( (transit > 0) && (transit < 200) )
+                diff = 200;
+            if ( (transit > 200) && (transit < 300) )
+                diff = 300;
+            if ( (transit > 300) && (transit < 400) )
+                diff = 400;
+            if ( (transit > 400) && (transit < 500) )
+                diff = 500;
+            if ( (transit > 500) && (transit < 600) )
+                diff = 600;
 
-                //float m_crf = 40;
-                float m_crf = 27;
-                av_log(NULL,AV_LOG_INFO,"crf= %f\n",x4->crf);
+            av_log(NULL,AV_LOG_INFO,"diff_bit= %f\n",diff);
+
+            double cur_bit = crf_to_bitrate(x4->crf);
+            av_log(NULL,AV_LOG_INFO,"cur_bit= %f\n",cur_bit);
+            float new_crf = bitrate_to_crf(cur_bit - diff);
+            av_log(NULL,AV_LOG_INFO,"new_ctf= %f\n",new_crf);
+
 
                 pthread_mutex_lock(&m);
-                // x4->crf  = m_crf; //work it
-                // avctx->bit_rate = 250000;
-                //avctx->bit_rate = 250000;
-                // avctx->rc_max_rate = 250000;
-                //x4->cqp = 40; //don't work it
-                // x4->params.rc.f_rf_constant = m_crf;
-                // x264_encoder_reconfig(x4->enc, &x4->params);
-                //x4->params.rc.i_vbv_max_bitrate = 250;
-                // avctx->rc_max_rate = 250000;
-                //x264_encoder_reconfig(x4->enc, &x4->params);
-                //avctx->bit_rate = 1000000;
-                x4->crf = m_crf;
-                //avctx->rc_max_rate = 1000000;
-                //avctx->bit_rate = 1000000;
+
+                x4->crf = new_crf;
                 pthread_mutex_unlock(&m);
 
                  av_log(NULL,AV_LOG_INFO,"crf= %f\n",x4->crf);
-                 flag = 0;
-                //av_log(NULL,AV_LOG_ERROR,"change bit_rate\n",NULL);
 
-                //x4->bit_rate = 250000;
-                // x4->rc_max_rate
-                // x4->rc_buffer_size
-            }
-            /* else
-            {
-
-                int m_crf = 2;
-                pthread_mutex_lock(&m);
-                x4->crf  = m_crf;
-                //avctx->rc_max_rate = 500000;
-                pthread_mutex_unlock(&m);
-            }*/
         }
         close(new_sockfd);
 

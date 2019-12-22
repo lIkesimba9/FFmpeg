@@ -216,9 +216,10 @@ void* send_back(void* param)
             if (c_i == 100)
             {
                   av_log(NULL,AV_LOG_ERROR,"BEGIN SUM\n",NULL);
-                 sg_val = sumQueueUnsigned(q);
-                 av_log(NULL,AV_LOG_ERROR,"END SUM\n",NULL);
 
+                 sg_val = sumQueueUnsigned(q);
+
+                 av_log(NULL,AV_LOG_ERROR,"END SUM Q SIZE IS %d\n",q->size);
             }
 
         }
@@ -236,21 +237,16 @@ void* send_back(void* param)
             enqueue(q,c_val); // - avg);
             //   av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u\n",c_val,avg,max,min_m);
 
-            enqueue(sg,(int)(sg_val - avg));
-            if (sg->size == 101)
-            {
-                dequeue(sg);
-                av_log(NULL,AV_LOG_ERROR,"QUEUE FULL\n",NULL);
-            }
+
 //            av_log(NULL,AV_LOG_ERROR,"BEFORE DETECT\n",NULL);
-            if ( (c_val - avg) > (3.5 * (max - min_m )))
+            if ( (c_val - avg) > ( 5 * (max - min_m )) )
             {
 
                 av_log(NULL,AV_LOG_ERROR,"DETECT CHANGE CHANEL\n",NULL);
                 detect = true;
             }
             if (detect){
-                if (count_new == 100 )
+                if (count_new == 60 )
                 {
                     // sum (q[i]/100)  / sec[win_size] - sec[0]
                     //  av_log(NULL,AV_LOG_ERROR,"DETECT CHANGE CHANEL\n",NULL);
@@ -263,7 +259,7 @@ void* send_back(void* param)
                     y_1 = sg_val;
 
                 }
-                if (count_new == 200)
+                if (count_new == 160)
                 {
 
                     struct timespec mt1;
@@ -273,7 +269,7 @@ void* send_back(void* param)
                     time_2 = (double)seconds + ns/1000000000.;
 
                     y_2 = sg_val;
-                    av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u\n",c_val,avg,max,min_m);
+                    av_log(NULL,AV_LOG_ERROR,"cur_val=%u avg=%.3f max=%u min_m=%u sg_val=%.3f\n",c_val,avg,max,min_m,sg_val);
                     av_log(NULL,AV_LOG_ERROR,"time=%.3f\n",time_2 -time_1);
                     av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / ( (time_2 -time_1) ));
                     unsigned int K = (y_2 - y_1) /  (time_2 -time_1);
@@ -290,43 +286,12 @@ void* send_back(void* param)
                 }*/
             }
 
-
-            // av_log(NULL,AV_LOG_ERROR,"K=%.3f\n",(y_2 - y_1) / 100);
         }
 
 
 
-        /*                       if (!first_flag)
-                        {
-                            void *p = val;
-                            unsigned int nul_val = *((unsigned int *)(val));
-
-                        }
-                        if (count < 10)
-                        {
-                                void *p = val;
-                                unsigned int transit = *((unsigned int *)(val));
-                                //fprintf(fp,"%f\n",transit);
-                                av_log(NULL,AV_LOG_INFO,"transit is %d\n",(int)transit);
-                                sum += (transit - nul_val);
-                                count++;
-
-                        }
-                        if (count == 10)
-                        {
-                      //  int sent_bytes = send(sockfd,(char *)&sum,4,0);
-                       // av_log(NULL,AV_LOG_INFO,"COUNT SEND %u\n",sum);
-                       // av_log(NULL,AV_LOG_INFO,"COUNT SEND %d\n",sent_bytes);
-                        //fflush(fp);
-                        sum = 0;
-                        count = 0;
-                        }
-                        syn = 0;
-
-                        */
-        //}
 
     }
-    //fclose(fp);
+
     return;
 }

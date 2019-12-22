@@ -16,6 +16,8 @@
 #define PORT 7890
 
 #include <string.h>
+double crf_to_bitrate(float crf);
+float bitrate_to_crf(double bitrate);
 void* change_param(void *param); 
 void server_init(void *param);
 /*
