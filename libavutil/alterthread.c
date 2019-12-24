@@ -42,11 +42,11 @@ float bitrate_to_crf(double bitrate)
 
 void server_init(void *param)
 {
-    float new_crf = 0;
+
     int flag = 1;
     AVCodecContext *avctx = (AVCodecContext *)param;
     X264Context *x4 = (X264Context *)(avctx->priv_data);
-
+     float new_crf = x4->crf;
     int sockfd, new_sockfd; // слушает на fd , новое соеденение на newfd
     struct sockaddr_in host_addr,client_addr;
     socklen_t sin_size;
@@ -109,6 +109,9 @@ void server_init(void *param)
 
             case -2:
                 new_crf = new_crf + 2;
+                break;
+            case -1:
+                new_crf = new_crf + 1;
                 break;
 
             case 1:

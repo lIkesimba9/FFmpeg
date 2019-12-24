@@ -151,6 +151,12 @@ void* send_back(void* param)
     long wait_second = 0;
     double sg_val;
     int count_miss = 0;
+    bool low_flag = true;
+    int low_count = 0;
+    bool detect_low = false;
+    struct timespec mt_low;
+    clock_gettime (CLOCK_REALTIME, &mt_low);
+    long second_low = 0;
     while (term == 1)
     {
 
@@ -250,6 +256,48 @@ void* send_back(void* param)
 
             //            av_log(NULL,AV_LOG_ERROR,"BEFORE DETECT\n",NULL);
 
+            if ( ( (c_val - avg )  >  (max - min_m) ) && low_flag )
+            {
+                detect_low = true;
+
+            }
+            clock_gettime (CLOCK_REALTIME, &mt_low);
+            long second_low = mt_low.tv_sec;
+            if (detect_low && ((second_low - seconds_last_send) > 3) )
+            {
+
+                if (low_count == 0)
+                {
+                    struct timespec mt1;
+                    clock_gettime (CLOCK_REALTIME, &mt1);
+                    long seconds = mt1.tv_sec;
+                    long ns = mt1.tv_nsec;
+                    time_1 = (double)seconds + (double)ns/(double)1000000000;
+                    y_1 = sg_val;
+                }
+                if (low_count == 100)
+                {
+                    struct timespec mt1;
+                    clock_gettime (CLOCK_REALTIME, &mt1);
+                    long seconds = mt1.tv_sec;
+                    long ns = mt1.tv_nsec;
+                    time_2 = (double)seconds + ns/1000000000.;
+                    y_2 = sg_val;
+                    av_log(NULL,AV_LOG_ERROR,"LOL LOL K=%.3f\n", ((y_2 - y_1) / ( (time_2 -time_1) ) ) / 100);
+                    int K = ( (y_2 - y_1) /  (time_2 -time_1) ) / 100;
+                    if ( (K > 100) && (K < 200))
+                    {
+                        commad = -2;
+                        int sent_bytes = send(sockfd,(char *)&commad,4,0);
+                        detect_low = false;
+                        low_count = 0;
+                        seconds_last_send = seconds;
+                    }
+                }
+                low_count++;
+            }
+
+
 
             if ( (c_val - avg) > 3.5 * ( (max - min_m )) )
             {
@@ -304,20 +352,22 @@ void* send_back(void* param)
                     }
                     if ( cur_second - wait_second > 20) //{
                     {
-                            if (  (c_val - avg) >  1.3 * ( (max - min_m )) )
-                            {
-                                if (send_flag){
-                                    commad = -2;
-                                    int sent_bytes = send(sockfd,(char *)&commad,4,0);
-                                    clock_gettime (CLOCK_REALTIME, &mtime_last_send);
-                                    long seconds_last_send = mtime_last_send.tv_sec;
+                        if (  (c_val - avg) >  1.3 * ( (max - min_m )) )
+                        {
+                            if (send_flag){
+                                commad = -1;
+                                int sent_bytes = send(sockfd,(char *)&commad,4,0);
+                                clock_gettime (CLOCK_REALTIME, &mtime_last_send);
+                                long seconds_last_send = mtime_last_send.tv_sec;
 
-                                    av_log(NULL,AV_LOG_ERROR,"SEND -2!!!!!!\n",NULL);
-                                    send_flag = false;
-                                    detect = true;
+                                av_log(NULL,AV_LOG_ERROR,"SEND -1!!!!!!\n",NULL);
+                                send_flag = false;
+                                detect = true;
+                                detect_low = false;
+                                low_count = 0;
 
-                                }
                             }
+                        }
 
 
 
@@ -344,7 +394,7 @@ void* send_back(void* param)
 
 
 
-                            if(  (  (seconds -seconds_last_send) > 3) )
+                            if(  (  (seconds - seconds_last_send) > 3) )
                             {
                                 av_log(NULL,AV_LOG_ERROR,"DIFF TIME=%lld\n", ( seconds -seconds_last_send ));
                                 seconds_last_send = seconds;
